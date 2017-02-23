@@ -2,7 +2,12 @@
 A language to model emails.
 
 # BUILD
-[![Build Status](https://travis-ci.org/mattmezza/email-lang.svg)](https://travis-ci.org/mattmezza/email-lang)
+
+[![Travis](https://img.shields.io/travis/mattmezza/email-lang.svg)]()
+
+```bash
+npm install --save-dev email-lang
+```
 
 # USAGE
 
