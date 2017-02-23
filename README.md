@@ -1,78 +1,69 @@
 # SYNOPSIS
-A data modeling language reference implementation. See [dml.sh](http://dml.sh)
+A language to model emails.
 
 # BUILD
-[![Build Status](https://travis-ci.org/voltraco/dml.svg)](https://travis-ci.org/voltraco/dml)
+[![Build Status](https://travis-ci.org/mattmezza/email-lang.svg)](https://travis-ci.org/mattmezza/email-lang)
 
 # USAGE
 
-### sample.model
-Define a model using the data modeling language syntax
+### email.txt
+Write an email file that follows the language specification
 
-```js
-/*
- * An example data model
- */
+```
+From: "matteomerola.me" <mattmezza@gmail.com>
+Subject: Comment about the novel
+Date: February 21, 2017 at 7:02:47 AM GMT+1
+To: Tiffany <tiffany.holsen@me.com>
+Reply-To: Matteo <mattmezza@gmail.com>
 
-Date created
-Number id
+We all know the numerous film adaptations of the novel!
 
-String name {
-  required true // this is a comment
-  gt 2 "Must be greater than 2 characters"
-  lte 256 "Must be less than or equal to 256 characters"
-}
-
-String bio "A bio must be a string" {
-  lte 140 "A bio must fit into a tweet"
-}
-
-Boolean accountType
+Cheers,
+  Matt.
 ```
 
 ### index.js
 Create an instance of the model then pass data into it one or more times.
 
 ```js
-const Models = require('node-dml')
+const fs = require('fs')
+const compile = require('email-lang')
 
-let model = Models.compile(fs.readFileSync('sample.model', 'utf8'))
+let emails = compile(fs.readFileSync('email.txt', 'utf8'))
 
-let result = model({
-  id: 1337,
-  created: new Date(),
-  name: 'Glen Danzig',
-  accountType: 'awesome'
-})
+console.log(emails[0].subject) // prints "Comment about the novel"
 ```
 
 ### output
 
-The result will be an object that contains the final data, as well as a
-`length` property which indicates how many rules were violated, and a rules
-property containing information about the rules that were violated.
+The result will be an array of emails structured as follows
 
 ```js
-{
-  data: {
-    id: 1337,
-    created: '2016-10-02T13:56:44.931Z',
-    name: 'Glen Danzig',
-    accountType: 'awesome'
+[
+  {
+    from: {
+      name: 'Matteo',
+      email: 'mattmezza@gmail.com'
+    },
+    subject: 'The subject of the email',
+    to: {
+      name: 'Recipient',
+      email: 'recipient@email.it'
+    },
+    replyTo: {
+      name: 'Matteo',
+      email: 'mattmezza@gmail.com'
+    },
+    text: 'The body content of the email message'
   },
-  length: 1,
-  rules: {
-    accountType: [{
-      validator: 'type',
-      message: 'Expected type [Boolean] but got type [String]'
-    }]
+  {
+    ...// another email if any
   }
-}
+]
 ```
 
 # LICENSE
 
-https://voltra.co
+http://matteomerola.me
 
 [![License](https://img.shields.io/npm/l/array.from.svg)](/LICENSE)
-
