@@ -1,5 +1,7 @@
 # SYNOPSIS
-A language to model emails.
+_A language to model emails._
+
+You can use this software in your npm project by requiring it or you can use [email-lang-cli](https://github.com/mattmezza/email-lang-cli) from your command line.
 
 # BUILD
 
