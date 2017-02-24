@@ -8,11 +8,11 @@ var OPEN_RE = /^<\s*/;
 var CLOSE_RE = /^>/;
 var WORD_RE = /^([-|+]?\w+)/;
 var NAME_RE = /^[A-Za-z0-9'-_][^<]+/;
-var EMAIL_RE = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+var EMAIL_RE = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))/;
 var WHITESPACE_RE = /^[^\S\n\r]*/; // but not new lines
 var ANYSPACE_RE = /^\s*/; // any whitespace
 var NON_WHITESPACE_RE = /^\S+/; // any non whitespace
-var NEWLINE_RE = /[\n\r]+/; // the next NL
+var NEWLINE_RE = /^[\n\r]+/; // the next NL
 var FROM_RE = /^From:/;
 var SUBJECT_RE = /^Subject:/;
 var DATE_RE = /^Date:/;
@@ -43,8 +43,20 @@ exports.default = function (str, options) {
   }
 
   function matcher(re) {
+    var name = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+
     var m = re.exec(lexer.source);
-    // console.log('>', arguments.callee.caller.name, "'" + m + "'", lexer.source)
+    var len = 100;
+    len = lexer.length() < len ? lexer.length() : len;
+    var matchedString = null;
+    if (m !== null) {
+      var mLen = len;
+      mLen = m.length < mLen ? m.length : mLen;
+      matchedString = m.slice(0, mLen);
+      matchedString = JSON.stringify(matchedString);
+    }
+    // console.log(`> ${name}\t\t${matchedString} => ${JSON.stringify(lexer.source.slice(0, len))}`)
+    // console.log(`${JSON.stringify(m)}`)
     if (m === null) return;
     var str = m[0];
     updatePosition(str);
@@ -78,6 +90,12 @@ exports.default = function (str, options) {
     return s;
   };
 
+  lexer.consumeAll = function () {
+    var all = lexer.source;
+    lexer.source = '';
+    return all;
+  };
+
   lexer.error = function (msg) {
     var err = new SyntaxError([msg, ':', lineno, ':', column].join(''));
     err.reason = msg;
@@ -88,37 +106,37 @@ exports.default = function (str, options) {
 
   var pm = lexer.match = {};
   pm.whitespace = function () {
-    return matcher(WHITESPACE_RE);
+    return matcher(WHITESPACE_RE, 'whitespace');
   };
   pm.anyspace = function () {
-    return matcher(ANYSPACE_RE);
+    return matcher(ANYSPACE_RE, 'anyspace');
   };
   pm.newline = function () {
-    return matcher(NEWLINE_RE);
+    return matcher(NEWLINE_RE, 'newline');
   };
   pm.open = function () {
-    return matcher(OPEN_RE);
+    return matcher(OPEN_RE, 'open<');
   };
   pm.close = function () {
-    return matcher(CLOSE_RE);
+    return matcher(CLOSE_RE, 'close>');
   };
   pm.from = function () {
-    return matcher(FROM_RE);
+    return matcher(FROM_RE, 'From:');
   };
   pm.to = function () {
-    return matcher(TO_RE);
+    return matcher(TO_RE, 'To:');
   };
   pm.name = function () {
-    return matcher(NAME_RE);
+    return matcher(NAME_RE, 'name');
   };
   pm.replyTo = function () {
-    return matcher(REPLY_TO_RE);
+    return matcher(REPLY_TO_RE, 'Reply-To:');
   };
   pm.entireline = function () {
-    return matcher(ENTIRELINE_RE);
+    return matcher(ENTIRELINE_RE, 'entireline');
   };
   pm.string = function () {
-    var quote = matcher(QUOTED_RE);
+    var quote = matcher(QUOTED_RE, 'quoted');
     if (!quote) return;
     var value = '';
     while (lexer.source[0] !== quote[0]) {
@@ -132,8 +150,11 @@ exports.default = function (str, options) {
     updatePosition(value);
     return value;
   };
+  pm.unquotedEmail = function () {
+    return matcher(EMAIL_RE, 'unquoted_email');
+  };
   pm.email = function () {
-    var open = matcher(OPEN_RE);
+    var open = matcher(OPEN_RE, 'open<');
     if (!open) return;
     var value = '';
     while (lexer.source[0] !== '>') {
@@ -151,7 +172,7 @@ exports.default = function (str, options) {
     return value;
   };
   pm.subject = function () {
-    var key = matcher(SUBJECT_RE);
+    var key = matcher(SUBJECT_RE, 'Subject:');
     if (!key) return;
     var value = '';
     while (lexer.source[0] !== '\n') {
@@ -166,7 +187,7 @@ exports.default = function (str, options) {
     return value;
   };
   pm.date = function () {
-    var key = matcher(DATE_RE);
+    var key = matcher(DATE_RE, 'Date:');
     if (!key) return;
     var value = '';
     while (lexer.source[0] !== '\n') {
@@ -181,10 +202,10 @@ exports.default = function (str, options) {
     return value;
   };
   pm.nonwhitespace = function () {
-    return matcher(NON_WHITESPACE_RE);
+    return matcher(NON_WHITESPACE_RE, 'non_whitespace');
   };
   pm.word = function () {
-    var m = matcher(WORD_RE);
+    var m = matcher(WORD_RE, 'word');
     return m && m[0];
   };
 

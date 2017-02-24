@@ -31,12 +31,35 @@ function parseAddress(lexer, type) {
   }
   var a = {};
   lexer.match.whitespace();
-  lexer.match.anyspace();
   // try to read "name"
   var name = lexer.match.string();
   if (!name) {
-    // there is no "name", try to read name
-    name = lexer.match.name();
+    // there is no "name", check if there is an email address unquoted
+    var unquotedEmail = lexer.match.unquotedEmail();
+    if (!unquotedEmail) {
+      // there is no unquoted email, check if there is a quoted email
+      var _email = lexer.match.email();
+      if (!_email) {
+        // no quoted name, no un quoted email no email... maybe an unquoted name??
+        var unquotedName = lexer.match.name();
+        if (!unquotedName) {
+          // what??? this is unacceptable...
+          lexer.error('Missing email and name in address');
+        } else {
+          name = unquotedName;
+        }
+      } else {
+        // there is no name, only a <email>
+        a.email = _email;
+        lexer.match.anyspace();
+        return a;
+      }
+    } else {
+      // there is no name, only email provided
+      a.email = unquotedEmail;
+      lexer.match.anyspace();
+      return a;
+    }
   }
   if (name) {
     a.name = name.toString().trim();
@@ -45,10 +68,9 @@ function parseAddress(lexer, type) {
   var email = lexer.match.email();
   if (!email) {
     lexer.error('Missing email in address');
-    return;
   }
   a.email = email;
-  lexer.match.newline();
+  lexer.match.anyspace();
   return a;
 }
 
@@ -60,7 +82,7 @@ function parseAddress(lexer, type) {
 exports.default = function (str) {
   var lexer = (0, _lexer2.default)(str);
   var emails = [];
-  while (lexer.length() && lexer.exec(EMAIL_HEADER_RE) !== null) {
+  while (lexer.length()) {
     var email = {};
     var from = parseAddress(lexer, 'from');
     from ? email.from = from : lexer.error('missing From:');
@@ -84,6 +106,11 @@ exports.default = function (str) {
       text += line;
       // read next line
       line = lexer.match.entireline();
+      if (!line && !lexer.exec(/\n/)) {
+        // no \n anymore, add the line, consume all and break
+        text += lexer.consumeAll();
+        break;
+      }
     }
     email.text = text;
     emails.push(email);

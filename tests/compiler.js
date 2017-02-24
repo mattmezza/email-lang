@@ -45,7 +45,8 @@ Share
 Copyright © 2017 All rights reserved.
 You are receiving this email because you opted in at our website.
 
-Unsubscribe from this list`)
+Unsubscribe from this list
+`)
   assert.equal(emails.length, 1)
   let email = emails[0]
   assert.equal(email.from.name, 'matteomerola.me')
